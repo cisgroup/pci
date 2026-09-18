@@ -7,10 +7,10 @@ boundary acceleration sensor.
 
 import matplotlib.pyplot as plt
 
-import ci
+import pci
 
 # 1) physical system (truth)
-chain = ci.MassSpringChain.uniform(4, mass=500.0, k=50_000.0, c=300.0)
+chain = pci.MassSpringChain.uniform(4, mass=500.0, k=50_000.0, c=300.0)
 dt, T = 1e-3, 5.0
 loads = {d: {"type": "random", "std": 400.0, "seed": d} for d in range(1, 5)}  # white-noise force on every mass
 truth = chain.simulate(loads, dt=dt, T=T, x0={"x1": 0.01, "v1": 0.01})
@@ -46,5 +46,5 @@ plt.show()
 
 # ---- the same problem from its YAML twin (01_four_dof_jacobi_ukf.yaml) ----------------------
 import os
-yaml_results = ci.solve(os.path.join(os.path.dirname(os.path.abspath(__file__)), "01_four_dof_jacobi_ukf.yaml"))
+yaml_results = pci.solve(os.path.join(os.path.dirname(os.path.abspath(__file__)), "01_four_dof_jacobi_ukf.yaml"))
 print(f"\nYAML twin: k4 final = {yaml_results.final('k4'):.1f}")

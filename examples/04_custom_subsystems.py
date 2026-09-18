@@ -9,7 +9,7 @@ The interface force is exchanged by Gauss-Seidel message passing.
 import matplotlib.pyplot as plt
 import numpy as np
 
-import ci
+import pci
 
 
 def duffing(x, u, p, t):
@@ -31,15 +31,15 @@ def measure_disp(x, u, p, t):
     return x[:1]
 
 
-A = ci.Subsystem("A", states=["q", "v"], inputs=["f"], dynamics=duffing, measurement=measure_accel,
+A = pci.Subsystem("A", states=["q", "v"], inputs=["f"], dynamics=duffing, measurement=measure_accel,
                  parameters={"m": 1.0, "k3": 50.0, "c": 0.3},
-                 unknowns={"k": ci.Unknown(initial=5.0, std=5.0)},
+                 unknowns={"k": pci.Unknown(initial=5.0, std=5.0)},
                  filter="ekf", x0={"q": 0.3}, P0=1e-4, Q=1e-10, R=1e-4, measured=["a_A"])
-B = ci.Subsystem("B", states=["q", "v"], inputs=["f"], dynamics=linear_sdof, measurement=measure_disp,
+B = pci.Subsystem("B", states=["q", "v"], inputs=["f"], dynamics=linear_sdof, measurement=measure_disp,
                  parameters={"m": 2.0, "k": 20.0, "c": 0.4},
                  filter="ukf", P0=1e-4, Q=1e-10, R=1e-6, measured=["q_B"])
-system = ci.System([A, B],
-                   ci.spring_damper("A", ["q", "v"], "f", "B", ["q", "v"], "f", k=6.0, c=0.2, name="F_AB"),
+system = pci.System([A, B],
+                   pci.spring_damper("A", ["q", "v"], "f", "B", ["q", "v"], "f", k=6.0, c=0.2, name="F_AB"),
                    schedule="gauss_seidel")
 print(system.describe())
 
@@ -49,7 +49,7 @@ N = int(T / dt)
 t = dt * np.arange(N + 1)
 p_true = {"m": 1.0, "k": 12.0, "k3": 50.0, "c": 0.3}
 p_B = {"m": 2.0, "k": 20.0, "c": 0.4}
-force = ci.HarmonicLoad(amplitude=2.0, frequency=0.7).sample(t[:-1])
+force = pci.HarmonicLoad(amplitude=2.0, frequency=0.7).sample(t[:-1])
 
 
 def rhs(z, k):
@@ -62,7 +62,7 @@ def rhs(z, k):
 Z = np.zeros((N + 1, 4)); Z[0] = [0.3, 0.0, 0.0, 0.0]
 acc_A = np.zeros(N + 1)
 for k in range(N):
-    Z[k + 1] = ci.heun(lambda z, tt: rhs(z, k), Z[k], t[k], dt)
+    Z[k + 1] = pci.heun(lambda z, tt: rhs(z, k), Z[k], t[k], dt)
     acc_A[k + 1] = rhs(Z[k + 1], k)[1]
 rng = np.random.default_rng(0)
 data = {"a_A": acc_A + rng.normal(0, 1e-2, N + 1), "q_B": Z[:, 2] + rng.normal(0, 1e-3, N + 1)}
@@ -75,5 +75,5 @@ plt.show()
 
 # ---- the same problem from its YAML twin (04_custom_subsystems.yaml, equations as strings) ---
 import os
-yaml_results = ci.solve(os.path.join(os.path.dirname(os.path.abspath(__file__)), "04_custom_subsystems.yaml"))
+yaml_results = pci.solve(os.path.join(os.path.dirname(os.path.abspath(__file__)), "04_custom_subsystems.yaml"))
 print(f"\nYAML twin: k final = {yaml_results.final('k'):.3f} (true 12.0)")

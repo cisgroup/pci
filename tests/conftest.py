@@ -1,13 +1,13 @@
 import numpy as np
 import pytest
 
-import ci
+import pci
 
 
 @pytest.fixture(scope="session")
 def four_dof():
     """Canonical 4-DOF testbed: two 2-DOF subsystems, unknown k4, sensors a1 and a4."""
-    chain = ci.MassSpringChain.uniform(4, mass=500.0, k=50_000.0, c=300.0)
+    chain = pci.MassSpringChain.uniform(4, mass=500.0, k=50_000.0, c=300.0)
     dt, T = 1e-3, 2.0
     loads = {d: {"type": "random", "std": 400.0, "seed": 100 + d} for d in range(1, 5)}
     truth = chain.simulate(loads, dt=dt, T=T, x0={"x1": 0.01, "v1": 0.01}, integrator="euler")

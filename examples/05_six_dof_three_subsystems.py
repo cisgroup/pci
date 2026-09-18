@@ -7,8 +7,8 @@ Loosely follows the 6-DOF example of the paper.
 
 import matplotlib.pyplot as plt
 
-import ci
-from ci import Spring
+import pci
+from pci import Spring
 
 springs = [
     Spring("ground", 1, 50_000.0, 300.0),          # k1
@@ -22,7 +22,7 @@ springs = [
     Spring(5, 6, 40_000.0, 480.0),                 # k9  (unknown, S3)
     Spring(3, 4, 40_000.0, 0.0, name="34"),        # k34 parallel spring (unknown, S2)
 ]
-chain = ci.MassSpringChain([500, 500, 600, 500, 500, 500], springs)
+chain = pci.MassSpringChain([500, 500, 600, 500, 500, 500], springs)
 
 dt, T = 2e-3, 20.0
 loads = {4: {"type": "random", "std": 1500.0, "seed": 123}}
@@ -61,5 +61,5 @@ plt.show()
 
 # ---- the same problem from its YAML twin ----------------------------------------------------
 import os
-yaml_results = ci.solve(os.path.join(os.path.dirname(os.path.abspath(__file__)), "05_six_dof_three_subsystems.yaml"))
+yaml_results = pci.solve(os.path.join(os.path.dirname(os.path.abspath(__file__)), "05_six_dof_three_subsystems.yaml"))
 print("\nYAML twin:", {p: round(yaml_results.final(p), 1) for p in ["k3", "c3", "k6", "c6", "k34", "k9", "c9"]})

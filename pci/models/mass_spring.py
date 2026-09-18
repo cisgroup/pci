@@ -6,7 +6,7 @@ elements (to each other or to the ground). It provides
 * the monolithic forward model (``matrices``, ``simulate``) used to generate
   synthetic ground truth and measurements, and
 * ``decompose(partition, ...)`` which turns the same physics into a
-  :class:`ci.System` of subsystems coupled by spring-damper interfaces, with
+  :class:`pci.System` of subsystems coupled by spring-damper interfaces, with
   selected parameters declared unknown.
 
 Naming conventions (all 1-based):
@@ -192,7 +192,7 @@ class MassSpringChain:
                  params: Optional[Mapping[str, float]] = None, t0: float = 0.0) -> Truth:
         """Monolithic forward simulation (the ground truth for synthetic experiments).
 
-        ``loads`` maps DOF numbers (or ``"f3"``) to load specifications, see :mod:`ci.loads`.
+        ``loads`` maps DOF numbers (or ``"f3"``) to load specifications, see :mod:`pci.loads`.
         ``x0`` maps ``x{d}``/``v{d}`` names to initial values (default: at rest).
         """
         n = self.n_dof
@@ -285,7 +285,7 @@ class MassSpringChain:
         positive_floor: float = 1.0,
         r_inflation: float = 10.0,
     ) -> System:
-        """Build a :class:`ci.System` from a partition of the DOFs.
+        """Build a :class:`pci.System` from a partition of the DOFs.
 
         Parameters
         ----------

@@ -1,6 +1,8 @@
-# compositional-inference (`import ci`)
+# pci: Probabilistic Compositional Inference
 
-Probabilistic compositional inference for coupled engineered systems.
+`pci` (`import pci`) is a Python library for probabilistic compositional
+inference: distributed state and parameter estimation for coupled engineered
+systems.
 
 A complex system is decomposed into **subsystems**. Each subsystem keeps its
 own physics, its own unknown parameters and its own estimator (Kalman-type
@@ -50,8 +52,8 @@ prior: {state_var: 1.0e-4, process_var: 1.0e-18, r_inflation: 10}
 ```
 
 ```python
-import ci
-results = ci.solve("problem.yaml")
+import pci
+results = pci.solve("problem.yaml")
 print(results.summary())
 results.plot_parameters(); results.plot_states(["S1.x2", "S2.x3"]); results.plot_messages()
 ```
@@ -59,7 +61,7 @@ results.plot_parameters(); results.plot_states(["S1.x2", "S2.x3"]); results.plot
 ### 2. Programmatic, with your own equations
 
 ```python
-import numpy as np, ci
+import numpy as np, pci
 
 def sdof(x, u, p, t):                      # x = states, u = inputs, p = parameters (dict), t = time
     return np.array([x[1], (u[0] - p["k"] * x[0] - p["c"] * x[1]) / p["m"]])
@@ -67,13 +69,13 @@ def sdof(x, u, p, t):                      # x = states, u = inputs, p = paramet
 def h(x, u, p, t):                         # what the sensor sees
     return np.array([x[0]])
 
-A = ci.Subsystem("A", ["x", "v"], ["f"], sdof, h, parameters={"m": 1.0, "c": 0.2},
-                 unknowns={"k": ci.Unknown(initial=6.0, std=3.0)}, filter="ukf",
+A = pci.Subsystem("A", ["x", "v"], ["f"], sdof, h, parameters={"m": 1.0, "c": 0.2},
+                 unknowns={"k": pci.Unknown(initial=6.0, std=3.0)}, filter="ukf",
                  x0={"x": 0.5}, P0=1e-4, Q=1e-10, R=1e-6, measured=["xa"])
-B = ci.Subsystem("B", ["x", "v"], ["f"], sdof, h, parameters={"m": 2.0, "k": 15.0, "c": 0.3},
+B = pci.Subsystem("B", ["x", "v"], ["f"], sdof, h, parameters={"m": 2.0, "k": 15.0, "c": 0.3},
                  filter="kf", P0=1e-4, Q=1e-10, R=1e-6, measured=["xb"])
 
-system = ci.System([A, B], ci.spring_damper("A", ["x", "v"], "f", "B", ["x", "v"], "f", k=4.0, c=0.1),
+system = pci.System([A, B], pci.spring_damper("A", ["x", "v"], "f", "B", ["x", "v"], "f", k=4.0, c=0.1),
                    schedule="gauss_seidel")
 results = system.estimate({"xa": xa_data, "xb": xb_data}, dt=1e-3, n_steps=4000)
 ```
@@ -94,7 +96,7 @@ routes can be mixed.
 | | dynamics `f(x, u, p, t) -> dx/dt` and measurement `h(x, u, p, t) -> y` | continuous time; the library discretises them |
 | | known parameters `p` | dict |
 | | unknowns | `Unknown(initial, std, process_std, lower, upper)`; estimated as random walks |
-| | filter | `kf`, `ekf`, `ukf` (`kappa`), `ckf`; register your own with `@ci.register_filter` |
+| | filter | `kf`, `ekf`, `ukf` (`kappa`), `ckf`; register your own with `@pci.register_filter` |
 | | integrator | `euler` (1st order), `heun` (RK2, default), `rk4` (4th order), or a custom step function; one per subsystem |
 | | initial state `x0`, prior `P0`, process noise `Q`, measurement noise `R` | scalars, variance vectors or full matrices |
 | | `measured` names | which columns of the data belong to this subsystem |
@@ -122,7 +124,7 @@ monolithic solution.
 ## Examples
 
 Every example exists twice: as a Python script and as a YAML twin solved
-with `ci.solve("<name>.yaml")`. Each script ends by running its twin and
+with `pci.solve("<name>.yaml")`. Each script ends by running its twin and
 printing the same estimates.
 
 | script + YAML | shows |
@@ -212,7 +214,7 @@ Jacobi and AB2 give the smallest state errors.
 ## Layout
 
 ```
-ci/
+pci/
   subsystem.py    Subsystem, Unknown                (node of the graph)
   interface.py    Interface, spring_damper           (edge / interface law)
   schedules.py    Jacobi, GaussSeidel                (message passing)
@@ -221,6 +223,6 @@ ci/
   integrators.py  euler, heun, rk4
   loads.py        load library
   models/         MassSpringChain, Spring, paper case-study definitions
-  config.py       ci.solve(yaml|dict)
+  config.py       pci.solve(yaml|dict)
   results.py      Results, metrics, plots
 ```

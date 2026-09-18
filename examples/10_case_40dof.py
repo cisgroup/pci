@@ -14,7 +14,7 @@ import os
 
 import numpy as np
 
-import ci
+import pci
 from casestudy_report import chain_properties, compare_with_yaml, print_design, report, save_figures
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -42,7 +42,7 @@ LOADS = {d: {"type": "random", "std": 400.0, "seed": 40 + d} for d in range(1, N
 
 # ---- physical system and synthetic data --------------------------------------------------------
 masses, k, c = chain_properties(N_DOF)
-chain = ci.MassSpringChain(masses, k=k, c=c)
+chain = pci.MassSpringChain(masses, k=k, c=c)
 truth = chain.simulate(LOADS, dt=DT, T=T)
 truth_dict = {**truth.as_dict(), **chain.interface_forces(truth, PARTITION)}
 
@@ -85,6 +85,6 @@ if __name__ == "__main__":
     if not args.no_save:
         save_figures(res, "case40_" + SCHEDULE, PARTITION, unknowns)
 
-    # ---- YAML twin: identical problem, no Python beyond ci.solve ---------------------------------
+    # ---- YAML twin: identical problem, no Python beyond pci.solve ---------------------------------
     if T == 20.0:
         compare_with_yaml(res, os.path.join(HERE, "10_case_40dof.yaml"), unknowns)

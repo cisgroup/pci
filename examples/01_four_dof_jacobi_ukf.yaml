@@ -1,4 +1,4 @@
-# YAML twin of 01_four_dof_jacobi_ukf.py. Solve with:  python 02_solve_from_yaml.py  (or ci.solve("01_four_dof_jacobi_ukf.yaml"))
+# YAML twin of 01_four_dof_jacobi_ukf.py. Solve with:  python 02_solve_from_yaml.py  (or pci.solve("01_four_dof_jacobi_ukf.yaml"))
 model: mass_spring_chain
 masses: [500, 500, 500, 500]
 stiffness: [50000, 50000, 50000, 50000]      # spring i connects DOF i-1 (0 = ground) to DOF i

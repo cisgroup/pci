@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite both the software and the paper below."
-title: "compositional-inference: probabilistic compositional inference for coupled engineered systems"
+title: "pci: Probabilistic Compositional Inference for coupled engineered systems"
 abstract: >-
   Distributed state and parameter estimation for systems of coupled subsystems.
   Each subsystem keeps its own physics, unknown parameters and Kalman-type
@@ -19,7 +19,7 @@ authors:
     orcid: "https://orcid.org/0000-0002-8849-5751"
     affiliation: "Princeton University, Complex Infrastructure Systems Group"
 license: MIT
-repository-code: "https://github.com/cisgroup/compositional-inference"
+repository-code: "https://github.com/cisgroup/pci"
 keywords:
   - compositional inference
   - distributed estimation

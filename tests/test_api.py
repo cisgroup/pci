@@ -1,32 +1,32 @@
 import numpy as np
 import pytest
 
-import ci
+import pci
 
 
 def test_loads_from_specs():
     t = np.arange(0, 1, 0.1)
-    assert np.allclose(ci.as_load(5.0).sample(t), 5.0)
-    assert np.allclose(ci.as_load({"type": "step", "amplitude": 2.0, "t_on": 0.5}).sample(t), np.where(t >= 0.5, 2.0, 0.0))
-    h = ci.as_load({"type": "harmonic", "amplitude": 1.0, "frequency": 1.0}).sample(t)
+    assert np.allclose(pci.as_load(5.0).sample(t), 5.0)
+    assert np.allclose(pci.as_load({"type": "step", "amplitude": 2.0, "t_on": 0.5}).sample(t), np.where(t >= 0.5, 2.0, 0.0))
+    h = pci.as_load({"type": "harmonic", "amplitude": 1.0, "frequency": 1.0}).sample(t)
     assert np.allclose(h, np.sin(2 * np.pi * t))
-    r1 = ci.RandomLoad(1.0, seed=3).sample(t)
-    r2 = ci.RandomLoad(1.0, seed=3).sample(t)
+    r1 = pci.RandomLoad(1.0, seed=3).sample(t)
+    r2 = pci.RandomLoad(1.0, seed=3).sample(t)
     assert np.allclose(r1, r2)
-    combo = (ci.ConstantLoad(1.0) + ci.ConstantLoad(2.0)) * 2.0
+    combo = (pci.ConstantLoad(1.0) + pci.ConstantLoad(2.0)) * 2.0
     assert np.allclose(combo.sample(t), 6.0)
-    rec = ci.RecordedLoad([0.0, 1.0], dt=0.5).sample(np.array([0.25]))
+    rec = pci.RecordedLoad([0.0, 1.0], dt=0.5).sample(np.array([0.25]))
     assert np.allclose(rec, 0.5)
 
 
 def test_schedule_resolution():
-    assert isinstance(ci.get_schedule("jacobi"), ci.Jacobi)
-    gs = ci.get_schedule({"type": "gauss_seidel", "iterations": 3, "order": ["B", "A"]})
-    assert isinstance(gs, ci.GaussSeidel) and gs.iterations == 3
+    assert isinstance(pci.get_schedule("jacobi"), pci.Jacobi)
+    gs = pci.get_schedule({"type": "gauss_seidel", "iterations": 3, "order": ["B", "A"]})
+    assert isinstance(gs, pci.GaussSeidel) and gs.iterations == 3
     assert gs.order(["A", "B"]) == ["B", "A"]
-    assert isinstance(ci.get_schedule("ab2"), ci.AdamsBashforth2)
+    assert isinstance(pci.get_schedule("ab2"), pci.AdamsBashforth2)
     with pytest.raises(ValueError):
-        ci.get_schedule("runge")
+        pci.get_schedule("runge")
 
 
 def test_custom_subsystems_with_user_equations():
@@ -38,12 +38,12 @@ def test_custom_subsystems_with_user_equations():
     def h_disp(x, u, p, t):
         return np.array([x[0]])
 
-    A = ci.Subsystem("A", ["x", "v"], ["f"], sdof, h_disp, parameters={"m": 1.0, "c": 0.2},
-                     unknowns={"k": ci.Unknown(initial=6.0, std=3.0)}, filter="ukf",
+    A = pci.Subsystem("A", ["x", "v"], ["f"], sdof, h_disp, parameters={"m": 1.0, "c": 0.2},
+                     unknowns={"k": pci.Unknown(initial=6.0, std=3.0)}, filter="ukf",
                      x0={"x": 0.5}, P0=1e-4, Q=1e-10, R=1e-6, measured=["xa"])
-    B = ci.Subsystem("B", ["x", "v"], ["f"], sdof, h_disp, parameters={"m": 2.0, "k": 15.0, "c": 0.3},
+    B = pci.Subsystem("B", ["x", "v"], ["f"], sdof, h_disp, parameters={"m": 2.0, "k": 15.0, "c": 0.3},
                      filter="kf", x0={"x": 0.0}, P0=1e-4, Q=1e-10, R=1e-6, measured=["xb"])
-    system = ci.System([A, B], ci.spring_damper("A", ["x", "v"], "f", "B", ["x", "v"], "f", k=4.0, c=0.1),
+    system = pci.System([A, B], pci.spring_damper("A", ["x", "v"], "f", "B", ["x", "v"], "f", k=4.0, c=0.1),
                        schedule="gauss_seidel")
 
     # ground truth from a monolithic integration with the true k = 10
@@ -88,14 +88,14 @@ def test_config_solve_roundtrip(tmp_path):
         "truth": {"seed": 123, "initial_state": {"x1": 0.01, "v1": 0.01}},
         "prior": {"state_var": 1e-4, "process_var": 1e-18, "r_inflation": 1.0},
     }
-    res = ci.solve(cfg)
+    res = pci.solve(cfg)
     assert abs(res.final("k4") - 50000) / 50000 < 0.02
     pytest.importorskip("yaml")
     import yaml
 
     path = tmp_path / "problem.yaml"
     path.write_text(yaml.safe_dump(cfg))
-    res2 = ci.solve(str(path))
+    res2 = pci.solve(str(path))
     assert np.allclose(res2.state("k4"), res.state("k4"))
 
 
@@ -104,14 +104,14 @@ def test_integrators_orders_and_selection():
     rhs = lambda x, t: -x
     x0, dt = np.array([1.0]), 0.1
     exact = np.exp(-dt)
-    errs = {n: abs(ci.get_integrator(n)(rhs, x0, 0.0, dt)[0] - exact) for n in ci.available_integrators()}
+    errs = {n: abs(pci.get_integrator(n)(rhs, x0, 0.0, dt)[0] - exact) for n in pci.available_integrators()}
     assert errs["rk4"] < errs["heun"] < errs["euler"]
     assert errs["rk4"] < 1e-7
-    assert ci.get_integrator(ci.rk4) is ci.rk4
+    assert pci.get_integrator(pci.rk4) is pci.rk4
     with pytest.raises(ValueError):
-        ci.get_integrator("ab3")
+        pci.get_integrator("ab3")
 
-    chain = ci.MassSpringChain.uniform(6, 500.0, 50e3, 300.0)
+    chain = pci.MassSpringChain.uniform(6, 500.0, 50e3, 300.0)
     system = chain.decompose([[1, 2], [3, 4], [5, 6]], integrator=["euler", "heun", "rk4"])
     assert [s.integrator.__name__ for s in system.subsystems.values()] == ["euler", "heun", "rk4"]
     system = chain.decompose([[1, 2], [3, 4], [5, 6]], integrator={"S3": "rk4"})
@@ -145,11 +145,11 @@ def test_custom_model_from_yaml_dict():
         "truth": {"parameters": {"A.k": 10.0}, "schedule": "ab2", "seed": 0},
         "prior": {"r_inflation": 1.0},
     }
-    res = ci.solve(cfg)
+    res = pci.solve(cfg)
     assert abs(res.final("k") - 10.0) < 0.3
     assert res.rmse(["B.q"], start=1.0)["B.q"] < 5e-3
     assert "F_AB" in res.messages and "F_AB" in res.truth
-    prob = ci.build(cfg)
+    prob = pci.build(cfg)
     assert prob.truth_system is not None and prob.mode == "estimate"
 
 
@@ -158,14 +158,14 @@ def test_simulate_mode_from_config():
            "damping": [300] * 4, "subsystems": [[1, 2], [3, 4]], "schedule": "ab2", "integrator": "heun",
            "loads": {1: {"type": "random", "std": 50, "seed": 3}}, "time": {"dt": 1e-3, "T": 2.0},
            "initial_state": {"x1": 0.01}}
-    res = ci.solve(cfg)
+    res = pci.solve(cfg)
     assert res.mode == "simulate"
     assert np.mean(list(res.rmse(["x1", "x2", "x3", "x4"]).values())) < 1e-6
 
 
 def test_symbolic_errors():
     pytest.importorskip("sympy")
-    from ci.symbolic import compile_model
+    from pci.symbolic import compile_model
 
     with pytest.raises(NameError):
         compile_model(["v", "(f - kk*q)/m"], ["q", "v"], ["f"], ["m", "k"])

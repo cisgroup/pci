@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 
-import ci
-from ci.filters import get_filter
+import pci
+from pci.filters import get_filter
 
 
 def linear_oscillator(dt=1e-2, wn=2.0 * np.pi, zeta=0.05):
@@ -48,8 +48,8 @@ def test_ukf_kappa_zero_equals_ckf():
     x, P = np.array([0.3, -0.2]), np.array([[2.0, 0.3], [0.3, 1.0]])
     u, y = np.array([0.1]), np.array([0.35])
     Q, R = 1e-6 * np.eye(2), np.array([[1e-3]])
-    a = ci.UKF(kappa=0.0).step(x, P, u, y, f, h, Q, R, 0.0)
-    b = ci.CKF().step(x, P, u, y, f, h, Q, R, 0.0)
+    a = pci.UKF(kappa=0.0).step(x, P, u, y, f, h, Q, R, 0.0)
+    b = pci.CKF().step(x, P, u, y, f, h, Q, R, 0.0)
     assert np.allclose(a.x, b.x)
     assert np.allclose(a.P, b.P)
 
@@ -57,15 +57,15 @@ def test_ukf_kappa_zero_equals_ckf():
 def test_predict_only_when_no_measurement():
     f, h = linear_oscillator()
     x, P = np.array([1.0, 0.0]), 0.1 * np.eye(2)
-    res = ci.UKF().step(x, P, np.zeros(1), None, f, h, 1e-6 * np.eye(2), np.eye(1), 0.0)
+    res = pci.UKF().step(x, P, np.zeros(1), None, f, h, 1e-6 * np.eye(2), np.eye(1), 0.0)
     assert np.allclose(res.x, f(x, np.zeros(1), 0.0), atol=1e-8)
     assert res.y_pred is None
 
 
 def test_registry_and_aliases():
-    assert isinstance(get_filter("unscented"), ci.UnscentedKalmanFilter)
-    assert isinstance(get_filter(ci.CKF), ci.CubatureKalmanFilter)
-    inst = ci.EKF()
+    assert isinstance(get_filter("unscented"), pci.UnscentedKalmanFilter)
+    assert isinstance(get_filter(pci.CKF), pci.CubatureKalmanFilter)
+    inst = pci.EKF()
     assert get_filter(inst) is inst
     with pytest.raises(ValueError):
         get_filter("particle")

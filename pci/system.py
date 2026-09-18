@@ -39,7 +39,7 @@ class System:
     ----------
     subsystems : sequence of Subsystem
     interfaces : sequence of Interface (nested lists are flattened, so the
-        output of :func:`ci.spring_damper` can be passed directly)
+        output of :func:`pci.spring_damper` can be passed directly)
     schedule : "jacobi" | "gauss_seidel" | dict | Schedule
     message_type : "mean" (currently the only implemented option)
     """

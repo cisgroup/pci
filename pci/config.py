@@ -62,7 +62,7 @@ Two model families are supported.
       seed: 0
     prior: {r_inflation: 1}
 
-Then ``results = ci.solve("problem.yaml")``.
+Then ``results = pci.solve("problem.yaml")``.
 """
 
 from __future__ import annotations
@@ -89,7 +89,7 @@ def load_config(path: str) -> Dict[str, Any]:
             try:
                 import yaml
             except ImportError as exc:  # pragma: no cover
-                raise ImportError("YAML configs require pyyaml: pip install compositional-inference[config]") from exc
+                raise ImportError("YAML configs require pyyaml: pip install pci[config]") from exc
             return yaml.safe_load(fh)
         return json.load(fh)
 
@@ -102,7 +102,7 @@ def _as_config(config) -> Dict[str, Any]:
 
 @dataclass
 class Problem:
-    """Everything ``ci.build`` instantiates from a configuration."""
+    """Everything ``pci.build`` instantiates from a configuration."""
 
     system: System
     loads: Dict[str, Any]  # keyed by input port ("S1.f1" or "f1")

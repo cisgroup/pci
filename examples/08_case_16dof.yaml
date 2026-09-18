@@ -1,4 +1,4 @@
-# Case study: 16 DOF = 4 x 4-DOF. YAML twin of 08_case_16dof.py; solve with ci.solve("08_case_16dof.yaml").
+# Case study: 16 DOF = 4 x 4-DOF. YAML twin of 08_case_16dof.py; solve with pci.solve("08_case_16dof.yaml").
 # Serial chain with non-uniform properties (spring i connects DOF i-1, 0 = ground, to DOF i).
 model: mass_spring_chain
 masses: [538.2, 508.5, 474.8, 452.9, 453.2, 475.5, 509.3, 538.8, 550.0, 537.7, 507.7, 474.0, 452.6, 453.5, 476.2, 510.2]

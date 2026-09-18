@@ -6,7 +6,7 @@ import os
 
 import numpy as np
 
-import ci
+import pci
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "results")
@@ -65,7 +65,7 @@ def save_figures(res, tag, partition, unknowns):
 
 def compare_with_yaml(res, yaml_path, unknowns):
     """Solve the YAML twin and check that it reproduces the Python-API result."""
-    yres = ci.solve(yaml_path)
+    yres = pci.solve(yaml_path)
     worst = max(abs(yres.final(p) - res.final(p)) / max(abs(res.final(p)), 1e-12) for p in unknowns) if unknowns else 0.0
     print(f"\nYAML twin ({os.path.basename(yaml_path)}): "
           + ", ".join(f"{p}={yres.final(p):.1f}" for p in unknowns)

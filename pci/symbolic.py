@@ -32,7 +32,7 @@ def _sympy():
     try:
         import sympy
     except ImportError as exc:  # pragma: no cover
-        raise ImportError("Equation strings require sympy: pip install compositional-inference[symbolic]") from exc
+        raise ImportError("Equation strings require sympy: pip install pci[symbolic]") from exc
     return sympy
 
 

@@ -1,11 +1,11 @@
 import numpy as np
 import pytest
 
-import ci
+import pci
 
 
 def test_matrices_match_hand_built_chain():
-    chain = ci.MassSpringChain([500.0, 500.0, 500.0, 500.0], k=[50e3] * 4, c=[300.0] * 4)
+    chain = pci.MassSpringChain([500.0, 500.0, 500.0, 500.0], k=[50e3] * 4, c=[300.0] * 4)
     M, K, C = chain.matrices()
     K_ref = 50e3 * np.array([[2, -1, 0, 0], [-1, 2, -1, 0], [0, -1, 2, -1], [0, 0, -1, 1]], float)
     assert np.allclose(K, K_ref)
@@ -62,7 +62,7 @@ def test_parameter_estimation_recovers_k4(four_dof, filt, schedule):
 
 def test_paper_six_dof_heterogeneous_filters_and_uneven_partition():
     """Paper 6-DOF system (script 02) with mixed filters, then re-partitioned into 1-, 2- and 3-DOF subsystems."""
-    from ci.models import paper
+    from pci.models import paper
 
     chain = paper.six_dof_chain()
     dt, T = 2e-3, 6.0
@@ -98,7 +98,7 @@ def test_paper_six_dof_heterogeneous_filters_and_uneven_partition():
 
 def test_divergence_raises_clear_error():
     """With R equal to the raw sensor noise the mean-only message loop can diverge; it must fail loudly."""
-    chain = ci.MassSpringChain.uniform(6, mass=500.0, k=50_000.0, c=300.0)
+    chain = pci.MassSpringChain.uniform(6, mass=500.0, k=50_000.0, c=300.0)
     dt, T = 1e-3, 1.5
     loads = {6: {"type": "random", "std": 300.0, "seed": 3}}
     truth = chain.simulate(loads, dt=dt, T=T)
@@ -109,13 +109,13 @@ def test_divergence_raises_clear_error():
 
 
 def test_unknown_interface_parameter_is_rejected():
-    chain = ci.MassSpringChain.uniform(4, 500.0, 50e3, 300.0)
+    chain = pci.MassSpringChain.uniform(4, 500.0, 50e3, 300.0)
     with pytest.raises(NotImplementedError):
         chain.decompose([[1, 2], [3, 4]], unknowns={"k3": 40e3})
 
 
 def test_partition_validation():
-    chain = ci.MassSpringChain.uniform(4, 500.0, 50e3, 300.0)
+    chain = pci.MassSpringChain.uniform(4, 500.0, 50e3, 300.0)
     with pytest.raises(ValueError):
         chain.decompose([[1, 2], [3]])
     with pytest.raises(ValueError):

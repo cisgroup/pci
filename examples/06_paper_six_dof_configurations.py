@@ -12,10 +12,10 @@ import os
 
 import numpy as np
 
-import ci
+import pci
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-BASE = ci.load_config(os.path.join(HERE, "06_paper_six_dof.yaml"))
+BASE = pci.load_config(os.path.join(HERE, "06_paper_six_dof.yaml"))
 BASE["loads"][4]["path"] = os.path.expanduser(BASE["loads"][4]["path"])
 if not os.path.exists(BASE["loads"][4]["path"]):
     BASE["loads"][4] = {"type": "random", "std": 1500.0, "seed": 123}
@@ -29,7 +29,7 @@ def run(label, **overrides):
     for key, val in overrides.items():
         cfg[key] = val
     try:
-        res = ci.solve(cfg)
+        res = pci.solve(cfg)
     except (NotImplementedError, RuntimeError) as exc:
         print(f"{label:<44s} FAILED: {str(exc)[:90]}")
         return None

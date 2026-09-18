@@ -1,4 +1,4 @@
-"""compositional-inference (``import ci``)
+"""pci: Probabilistic Compositional Inference (``import pci``)
 
 Probabilistic compositional inference for systems of coupled subsystems:
 each subsystem keeps its own model and estimator, and coupling is handled by
@@ -6,9 +6,9 @@ message passing across interfaces.
 
 Quick start::
 
-    import ci
+    import pci
 
-    chain = ci.MassSpringChain.uniform(4, mass=500.0, k=50_000.0, c=300.0)
+    chain = pci.MassSpringChain.uniform(4, mass=500.0, k=50_000.0, c=300.0)
     truth = chain.simulate({1: {"type": "random", "std": 400, "seed": 1}}, dt=1e-3, T=5.0)
     data = chain.measure(truth, ["a1", "a4"], noise_std=1e-3, seed=2)
 

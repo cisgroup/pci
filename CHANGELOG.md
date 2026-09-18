@@ -23,6 +23,6 @@ All notable changes to this project are documented here. The format follows
 - Integrators: Euler, Heun, RK4.
 - Built-in `MassSpringChain` model with `decompose`, the paper's 4-DOF and
   6-DOF configurations, and a load library (random, harmonic, El Centro).
-- Declarative problem definition through YAML or dict (`ci.solve`).
+- Declarative problem definition through YAML or dict (`pci.solve`).
 - `Results` with metrics (RMSE, NRMSE), plotting helpers and pandas export.
 - Examples 01-11 and case studies with 9, 16, 20 and 40 DOF.
