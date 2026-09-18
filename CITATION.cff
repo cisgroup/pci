@@ -1,0 +1,44 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite both the software and the paper below."
+title: "compositional-inference: probabilistic compositional inference for coupled engineered systems"
+abstract: >-
+  Distributed state and parameter estimation for systems of coupled subsystems.
+  Each subsystem keeps its own physics, unknown parameters and Kalman-type
+  estimator; subsystems exchange interface messages on a graph under a
+  Jacobi or Gauss-Seidel schedule, so no global augmented state or covariance
+  is ever assembled.
+type: software
+version: "0.1.0"
+date-released: "2026-09-18"
+authors:
+  - family-names: Ghorbani
+    given-names: Esmaeil
+    affiliation: "Princeton University, Complex Infrastructure Systems Group"
+  - family-names: Hackl
+    given-names: Jürgen
+    orcid: "https://orcid.org/0000-0002-8849-5751"
+    affiliation: "Princeton University, Complex Infrastructure Systems Group"
+license: MIT
+repository-code: "https://github.com/cisgroup/compositional-inference"
+keywords:
+  - compositional inference
+  - distributed estimation
+  - message passing
+  - Kalman filter
+  - unscented Kalman filter
+  - system identification
+  - digital twins
+  - coupled systems
+preferred-citation:
+  type: article
+  title: "Subsystem Structure as an Inferential Resource for Coupled Engineered Systems"
+  authors:
+    - family-names: Ghorbani
+      given-names: Esmaeil
+    - family-names: Hackl
+      given-names: Jürgen
+  year: 2026
+  journal: "arXiv preprint"
+  identifiers:
+    - type: other
+      value: "arXiv:2605.27544"

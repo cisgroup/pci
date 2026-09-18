@@ -1,0 +1,67 @@
+# Case study: 20 DOF = 5 x 4-DOF. YAML twin of 09_case_20dof.py; solve with ci.solve("09_case_20dof.yaml").
+# Serial chain with non-uniform properties (spring i connects DOF i-1, 0 = ground, to DOF i).
+model: mass_spring_chain
+masses: [538.2, 508.5, 474.8, 452.9, 453.2, 475.5, 509.3, 538.8, 550.0, 537.7, 507.7, 474.0, 452.6, 453.5, 476.2, 510.2, 539.3, 550.0, 537.1, 506.8]
+stiffness: [62044.5, 56443.8, 41402.9, 38956.8, 52689.0, 62481.8, 53988.7, 39652.2, 40475.2, 55252.1, 62334.6, 51346.9, 38385.9, 42439.6, 57569.2, 61609.9, 48642.0, 37663.6, 44758.0, 59532.0]
+damping: [355.9, 279.6, 218.6, 219.3, 281.0, 357.1, 390.0, 354.8, 278.1, 218.0, 220.0, 282.5, 358.3, 389.9, 353.5, 276.6, 217.4, 220.7, 284.0, 359.4]
+
+subsystems: [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16], [17, 18, 19, 20]]
+names: ['S1', 'S2', 'S3', 'S4', 'S5']
+filters:
+  S1: kf    # grounded: accelerations only, states only
+  S2: ukf    # displacement + acceleration
+  S3: ckf    # a single displacement sensor, two unknowns
+  S4: ekf    # unknown mass, EKF, RK4
+  S5: ukf    # noisy accelerometer + displacement
+integrator:
+  S1: heun
+  S2: heun
+  S3: heun
+  S4: rk4
+  S5: heun
+schedule: gauss_seidel
+
+unknowns:                      # initial guesses are biased, std = 0.5 x true value
+  k7: {initial: 37792.1, std: 26994.3}
+  k10: {initial: 33151.3, std: 27626.0}
+  c10: {initial: 327.0, std: 109.0}
+  m15: {initial: 381.0, std: 238.1}
+  k19: {initial: 58185.4, std: 22379.0}
+
+sensors: ['a2', 'a4', 'x6', 'a8', 'x11', 'x14', 'a16', 'a18', 'x20']
+noise_std:                     # per-sensor sensor noise (x in m, a in m/s^2)
+  a2: 0.005
+  a4: 0.005
+  x6: 0.001
+  a8: 0.01
+  x11: 0.001
+  x14: 0.0001
+  a16: 0.005
+  a18: 0.02
+  x20: 0.001
+
+loads:
+  1: {type: random, std: 300.0, seed: 31}
+  2: {type: random, std: 300.0, seed: 32}
+  3: {type: random, std: 300.0, seed: 33}
+  4: {type: random, std: 300.0, seed: 34}
+  5: {type: random, std: 300.0, seed: 35}
+  6: {type: random, std: 300.0, seed: 36}
+  7: {type: random, std: 300.0, seed: 37}
+  8: {type: random, std: 300.0, seed: 38}
+  9: {type: random, std: 300.0, seed: 39}
+  10: {type: random, std: 300.0, seed: 40}
+  11: {type: random, std: 300.0, seed: 41}
+  12: {type: random, std: 300.0, seed: 42}
+  13: {type: random, std: 300.0, seed: 43}
+  14: {type: random, std: 300.0, seed: 44}
+  15: {type: random, std: 300.0, seed: 45}
+  16: {type: random, std: 300.0, seed: 46}
+  17: {type: random, std: 300.0, seed: 47}
+  18: {type: random, std: 300.0, seed: 48}
+  19: {type: random, std: 300.0, seed: 49}
+  20: {type: elcentro, path: ~/Documents/Princeton/Projects/Active-projects/ntwks/parl_KFs/Selected_code_for_sub/github-compositional-inference/data/elcentro.mat, scale: 1500.0, stretch: True}
+
+time: {dt: 1.0e-3, T: 20.0}
+truth: {seed: 1}
+prior: {state_var: 1.0e-4, process_var: 1.0e-10, r_inflation: 10}   # R = (10 x noise_std)^2, see README

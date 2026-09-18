@@ -1,0 +1,35 @@
+# Two non-standard subsystems written as equation strings (model: custom): a Van der Pol oscillator with
+# unknown mu (UKF, RK4) coupled by a spring-damper to a Bouc-Wen hysteretic element with unknown beta, gamma (CKF).
+# Solve with:  ci.solve("11_vanderpol_boucwen.yaml")
+model: custom
+subsystems:
+  VdP:
+    states: [q, v]
+    inputs: [f]
+    parameters: {m: 1.0, w: 2.0}
+    unknowns: {mu: {initial: 0.4, std: 0.5}}
+    equations: {q: v, v: (f + mu*(1 - q**2)*v - w**2*q) / m}
+    measurements: {a_vdp: (f + mu*(1 - q**2)*v - w**2*q) / m}
+    noise_std: {a_vdp: 1.0e-2}
+    filter: ukf
+    integrator: rk4
+    x0: {q: 0.5}
+  BW:
+    states: [q, v, z]
+    inputs: [f]
+    parameters: {m: 1.0, c: 0.1, alpha: 0.5, k: 100.0, A: 1.0, n: 1.0}
+    unknowns: {beta: {initial: 0.2, std: 0.3}, gamma: {initial: 0.2, std: 0.3}}
+    equations:
+      q: v
+      v: (f - c*v - alpha*k*q - (1 - alpha)*k*z) / m
+      z: A*v - beta*Abs(v)*Abs(z)**(n - 1)*z - gamma*v*Abs(z)**n
+    measurements: {q_bw: q, a_bw: (f - c*v - alpha*k*q - (1 - alpha)*k*z) / m}
+    noise_std: {q_bw: 1.0e-4, a_bw: 1.0e-2}
+    filter: ckf
+interfaces:
+  - {type: spring_damper, a: VdP, a_vars: [q, v], a_port: f, b: BW, b_vars: [q, v], b_port: f, k: 20.0, c: 0.5, name: F_link}
+schedule: gauss_seidel
+loads: {VdP.f: {type: harmonic, amplitude: 3.0, frequency: 0.3}, BW.f: {type: random, std: 20.0, seed: 4}}
+time: {dt: 1.0e-3, T: 30.0}
+truth: {parameters: {VdP.mu: 1.0, BW.beta: 0.5, BW.gamma: 0.5}, x0: {VdP.q: 0.5}, schedule: ab2, seed: 0}
+prior: {r_inflation: 1}

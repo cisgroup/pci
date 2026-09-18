@@ -1,0 +1,58 @@
+# Case study: 16 DOF = 4 x 4-DOF. YAML twin of 08_case_16dof.py; solve with ci.solve("08_case_16dof.yaml").
+# Serial chain with non-uniform properties (spring i connects DOF i-1, 0 = ground, to DOF i).
+model: mass_spring_chain
+masses: [538.2, 508.5, 474.8, 452.9, 453.2, 475.5, 509.3, 538.8, 550.0, 537.7, 507.7, 474.0, 452.6, 453.5, 476.2, 510.2]
+stiffness: [62044.5, 56443.8, 41402.9, 38956.8, 52689.0, 62481.8, 53988.7, 39652.2, 40475.2, 55252.1, 62334.6, 51346.9, 38385.9, 42439.6, 57569.2, 61609.9]
+damping: [355.9, 279.6, 218.6, 219.3, 281.0, 357.1, 390.0, 354.8, 278.1, 218.0, 220.0, 282.5, 358.3, 389.9, 353.5, 276.6]
+
+subsystems: [[1, 2, 3, 4], [5, 6, 7, 8], [9, 10, 11, 12], [13, 14, 15, 16]]
+names: ['S1', 'S2', 'S3', 'S4']
+filters:
+  S1: ukf    # grounded: accelerations only
+  S2: kf    # two displacement sensors, states only
+  S3: ckf    # accelerometers only, two unknowns
+  S4: ukf    # a single displacement sensor, RK4
+integrator:
+  S1: heun
+  S2: heun
+  S3: heun
+  S4: rk4
+schedule: jacobi
+
+unknowns:                      # initial guesses are biased, std = 0.5 x true value
+  k2: {initial: 39510.7, std: 28221.9}
+  k11: {initial: 37400.8, std: 31167.3}
+  c11: {initial: 110.0, std: 110.0}
+  k15: {initial: 80596.9, std: 28784.6}
+
+sensors: ['a1', 'a4', 'x6', 'x8', 'a10', 'a12', 'x16']
+noise_std:                     # per-sensor sensor noise (x in m, a in m/s^2)
+  a1: 0.005
+  a4: 0.005
+  x6: 0.0001
+  x8: 0.0001
+  a10: 0.01
+  a12: 0.01
+  x16: 0.001
+
+loads:
+  1: {type: random, std: 400.0, seed: 21}
+  2: {type: random, std: 400.0, seed: 22}
+  3: {type: random, std: 400.0, seed: 23}
+  4: {type: random, std: 400.0, seed: 24}
+  5: {type: random, std: 400.0, seed: 25}
+  6: {type: random, std: 400.0, seed: 26}
+  7: {type: random, std: 400.0, seed: 27}
+  8: {type: random, std: 400.0, seed: 28}
+  9: {type: random, std: 400.0, seed: 29}
+  10: {type: random, std: 400.0, seed: 30}
+  11: {type: random, std: 400.0, seed: 31}
+  12: {type: random, std: 400.0, seed: 32}
+  13: {type: random, std: 400.0, seed: 33}
+  14: {type: random, std: 400.0, seed: 34}
+  15: {type: random, std: 400.0, seed: 35}
+  16: {type: random, std: 400.0, seed: 36}
+
+time: {dt: 1.0e-3, T: 20.0}
+truth: {seed: 1}
+prior: {state_var: 1.0e-4, process_var: 1.0e-10, r_inflation: 10}   # R = (10 x noise_std)^2, see README
