@@ -18,8 +18,21 @@ The library implements the framework of
 
 ## Install
 
+The import name is `pci`. The distribution name on PyPI is `pci-inference`
+(the name `pci` is taken by an unrelated package).
+
 ```bash
-pip install -e ".[all]"        # numpy, scipy + matplotlib, pyyaml, pandas, sympy
+pip install "pci-inference[all]"                              # from PyPI (once released)
+pip install "pci-inference[all] @ git+https://github.com/cisgroup/pci.git"   # latest main
+```
+
+Extras: `plot` (matplotlib), `config` (pyyaml), `data` (pandas), `symbolic`
+(sympy), `all` (everything). For development, clone the repo and install it
+in editable mode so that changes to the source take effect without reinstalling:
+
+```bash
+git clone https://github.com/cisgroup/pci.git && cd pci
+pip install -e ".[dev]"        # all extras + pytest
 pytest                         # run the test suite
 ```
 

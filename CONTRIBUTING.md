@@ -9,7 +9,7 @@ to run before opening a pull request, and the conventions used in the code.
 git clone https://github.com/cisgroup/pci
 cd pci
 python -m venv .venv && source .venv/bin/activate
-pip install -e ".[dev]"      # numpy, scipy, matplotlib, pyyaml, pandas, sympy, pytest
+pip install -e ".[dev]"      # editable install: all extras + pytest, source changes apply immediately
 ```
 
 ## Before you open a pull request

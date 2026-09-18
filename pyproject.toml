@@ -3,7 +3,7 @@ requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "pci"
+name = "pci-inference"
 version = "0.1.0"
 description = "Probabilistic compositional inference: distributed state and parameter estimation for systems of coupled subsystems"
 readme = "README.md"
