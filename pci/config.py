@@ -82,16 +82,35 @@ from .system import System
 
 
 def load_config(path: str) -> Dict[str, Any]:
-    """Read a YAML or JSON configuration file."""
+    """Read a YAML or JSON configuration file.
+
+    Relative ``path`` entries of recorded loads (``type: recorded`` or
+    ``type: elcentro``) are resolved against the directory of the
+    configuration file, so a problem folder can be moved as a whole.
+    """
     ext = os.path.splitext(path)[1].lower()
     with open(path, "r", encoding="utf-8") as fh:
         if ext in (".yaml", ".yml"):
             try:
                 import yaml
             except ImportError as exc:  # pragma: no cover
-                raise ImportError("YAML configs require pyyaml: pip install pci[config]") from exc
-            return yaml.safe_load(fh)
-        return json.load(fh)
+                raise ImportError("YAML configs require pyyaml: pip install pci-inference[config]") from exc
+            cfg = yaml.safe_load(fh)
+        else:
+            cfg = json.load(fh)
+    _resolve_load_paths(cfg, os.path.dirname(os.path.abspath(path)))
+    return cfg
+
+
+def _resolve_load_paths(cfg: Dict[str, Any], base_dir: str) -> None:
+    loads = cfg.get("loads") if isinstance(cfg, dict) else None
+    if not isinstance(loads, dict):
+        return
+    for spec in loads.values():
+        if isinstance(spec, dict) and isinstance(spec.get("path"), str):
+            p = os.path.expanduser(spec["path"])
+            if not os.path.isabs(p):
+                spec["path"] = os.path.join(base_dir, p)
 
 
 def _as_config(config) -> Dict[str, Any]:

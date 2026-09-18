@@ -13,7 +13,12 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering",
 ]
 authors = [{ name = "Esmaeil Ghorbani" }, { name = "Jürgen Hackl" }]
@@ -26,12 +31,38 @@ config = ["pyyaml>=6.0"]
 data = ["pandas>=2.0"]
 symbolic = ["sympy>=1.12"]
 all = ["matplotlib>=3.7", "pyyaml>=6.0", "pandas>=2.0", "sympy>=1.12"]
-dev = ["pytest>=7", "matplotlib>=3.7", "pyyaml>=6.0", "pandas>=2.0", "sympy>=1.12"]
+# Documentation site: MkDocs Material, API reference from docstrings (mkdocstrings),
+# tutorial notebooks rendered with their committed outputs (mkdocs-jupyter).
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings-python>=1.10",
+    "mkdocs-jupyter>=0.25",
+]
+# Everything a contributor needs: all extras, tests, lint, the jupytext-paired
+# notebooks (executed as tests with nbmake) and the docs toolchain.
+dev = [
+    "matplotlib>=3.7", "pyyaml>=6.0", "pandas>=2.0", "sympy>=1.12",
+    "pytest>=7",
+    "ruff>=0.5",
+    "pre-commit>=3",
+    "jupytext>=1.16",
+    "nbmake>=1.5",
+    "ipykernel>=6.29",
+    "jupyterlab>=4.2",
+    "build>=1.0",
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings-python>=1.10",
+    "mkdocs-jupyter>=0.25",
+]
 
 [project.urls]
 Homepage = "https://github.com/cisgroup/pci"
+Documentation = "https://cisgroup.github.io/pci/"
 Repository = "https://github.com/cisgroup/pci"
 Issues = "https://github.com/cisgroup/pci/issues"
+Changelog = "https://github.com/cisgroup/pci/blob/main/CHANGELOG.md"
 
 [tool.setuptools.packages.find]
 where = ["."]
@@ -39,3 +70,38 @@ include = ["pci*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# The notebooks under examples/ and case_studies/ are run explicitly with
+# `pytest --nbmake examples/*.ipynb`; never collect them by accident.
+norecursedirs = ["examples", "case_studies", "docs", "site", ".venv"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+# Notebooks are edited through their jupytext-paired .py files; lint those instead.
+extend-exclude = ["*.ipynb", "site"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "B", "I"]
+ignore = [
+    "E501",  # line-too-long: long docstring/table lines are accepted
+    "E731",  # lambda assignments are used for short right-hand sides
+    "E741",  # `I` is the identity matrix in the filters
+    "B905",  # zip(strict=...) needs Python >= 3.10 semantics we do not rely on
+    "B023",  # closures in the model builders bind their loop variables through default arguments
+    "E702",  # `a; b` on one line is used for compact matrix set-up
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tutorial scripts (jupytext .py:percent) use notebook idioms such as imports mid-file.
+"examples/**" = ["E402", "E703", "B018"]
+"case_studies/**" = ["E402", "E703", "B018"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["pci"]
+
+[tool.jupytext]
+# Every tutorial and case study is a pair: a clean .py:percent (the reviewable
+# source of truth) and a .ipynb with the executed outputs shown in the docs.
+# `jupytext --sync examples/*.py` keeps them identical.
+formats = "ipynb,py:percent"

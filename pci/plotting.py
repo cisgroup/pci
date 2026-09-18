@@ -11,7 +11,7 @@ def _plt():
     try:
         import matplotlib.pyplot as plt
     except ImportError as exc:  # pragma: no cover
-        raise ImportError("Plotting requires matplotlib: pip install pci[plot]") from exc
+        raise ImportError("Plotting requires matplotlib: pip install pci-inference[plot]") from exc
     return plt
 
 

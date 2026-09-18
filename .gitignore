@@ -14,10 +14,20 @@ dist/
 .vscode/
 .idea/
 
-# Generated example outputs (figures and trajectory CSVs are rebuilt by the example scripts)
+# Generated example outputs (trajectory CSVs are rebuilt by the example scripts)
 examples/results/
-*.png
+case_studies/results/
 *.csv
+*.png
+# ...except the committed documentation images and gallery thumbnails
+!docs/images/*.png
+!examples/thumbs/*.png
+!case_studies/thumbs/*.png
+
+# Jupyter
+.ipynb_checkpoints/
+.virtual_documents/
 
 # Docs build
 site/
+.cache/

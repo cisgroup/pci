@@ -21,7 +21,7 @@ functions (``sin``, ``cos``, ``exp``, ``sqrt``, ``abs``, ``tanh``, ``sign``,
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Iterable, List, Mapping, Optional, Sequence
+from typing import Callable, Dict, Iterable, Mapping, Optional, Sequence
 
 import numpy as np
 
@@ -32,7 +32,7 @@ def _sympy():
     try:
         import sympy
     except ImportError as exc:  # pragma: no cover
-        raise ImportError("Equation strings require sympy: pip install pci[symbolic]") from exc
+        raise ImportError("Equation strings require sympy: pip install pci-inference[symbolic]") from exc
     return sympy
 
 

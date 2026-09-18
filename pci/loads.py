@@ -117,7 +117,7 @@ class RecordedLoad(Load):
 class ElCentroLoad(RecordedLoad):
     """The 1940 El Centro record shipped with the paper repository (``elcentro.mat``).
 
-    ``path`` defaults to the ``CI_ELCENTRO`` environment variable. The
+    ``path`` defaults to the ``PCI_ELCENTRO`` environment variable. The
     ``.mat`` file holds a 2 x n array ``e`` with time in row 0 and ground
     acceleration in row 1. Use ``scale`` to turn ground acceleration into a
     force (the paper's 6-DOF example uses ``scale = 3 * 500``); ``stretch``
@@ -125,10 +125,10 @@ class ElCentroLoad(RecordedLoad):
     """
 
     def __init__(self, path: Optional[str] = None, scale: float = 1.0, loop: bool = False, stretch: bool = False):
-        path = os.path.expanduser(path or os.environ.get("CI_ELCENTRO") or "")
+        path = os.path.expanduser(path or os.environ.get("PCI_ELCENTRO") or os.environ.get("CI_ELCENTRO") or "")
         if not path or not os.path.exists(path):
             raise FileNotFoundError(
-                "El Centro record not found. Pass `path=` or set the CI_ELCENTRO environment variable."
+                "El Centro record not found. Pass `path=` or set the PCI_ELCENTRO environment variable."
             )
         import scipy.io
 
