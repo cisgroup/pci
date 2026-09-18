@@ -1,0 +1,47 @@
+# Case study: 9 DOF = 3 x 3-DOF. YAML twin of 01_case_09dof.py; solve with pci.solve("01_case_09dof.yaml").
+# Serial chain with non-uniform properties (spring i connects DOF i-1, 0 = ground, to DOF i).
+model: mass_spring_chain
+masses: [538.2, 508.5, 474.8, 452.9, 453.2, 475.5, 509.3, 538.8, 550.0]
+stiffness: [62044.5, 56443.8, 41402.9, 38956.8, 52689.0, 62481.8, 53988.7, 39652.2, 40475.2]
+damping: [355.9, 279.6, 218.6, 219.3, 281.0, 357.1, 390.0, 354.8, 278.1]
+
+subsystems: [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
+names: ['S1', 'S2', 'S3']
+filters:
+  S1: kf    # grounded: accelerations only, states only (linear KF)
+  S2: ukf    # free-floating, two accelerometers, joint estimation
+  S3: ckf    # displacement + acceleration, two unknowns, RK4
+integrator:
+  S1: heun
+  S2: heun
+  S3: rk4
+schedule: jacobi
+
+unknowns:                      # initial guesses are biased, std = 0.5 x true value
+  k5: {initial: 31613.4, std: 26344.5}
+  k9: {initial: 28332.6, std: 20237.6}
+  c9: {initial: 417.2, std: 139.1}
+
+sensors: ['a1', 'a3', 'a5', 'a6', 'x8', 'a9']
+noise_std:                     # per-sensor sensor noise (x in m, a in m/s^2)
+  a1: 0.005
+  a3: 0.005
+  a5: 0.01
+  a6: 0.01
+  x8: 0.001
+  a9: 0.005
+
+loads:
+  1: {type: random, std: 400.0, seed: 11}
+  2: {type: random, std: 400.0, seed: 12}
+  3: {type: random, std: 400.0, seed: 13}
+  4: {type: random, std: 400.0, seed: 14}
+  5: {type: random, std: 400.0, seed: 15}
+  6: {type: random, std: 400.0, seed: 16}
+  7: {type: random, std: 400.0, seed: 17}
+  8: {type: random, std: 400.0, seed: 18}
+  9: {type: random, std: 400.0, seed: 19}
+
+time: {dt: 1.0e-3, T: 20.0}
+truth: {seed: 1}
+prior: {state_var: 1.0e-4, process_var: 1.0e-10, r_inflation: 10}   # R = (10 x noise_std)^2, see README

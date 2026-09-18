@@ -1,0 +1,35 @@
+# Baseline of 06_paper_six_dof_configurations.py: the paper's 6-DOF system, all UKF, Jacobi,
+# El Centro force on mass 4. The script loads this file and overrides keys for each variant.
+model: mass_spring_chain
+masses: [500, 500, 600, 500, 500, 500]
+springs:
+  - {a: ground, b: 1, k: 50000, c: 300}
+  - {a: ground, b: 2, k: 40000, c: 350}
+  - {a: 1, b: 2, k: 45000, c: 320}
+  - {a: 2, b: 3, k: 30000, c: 400}
+  - {a: 3, b: 4, k: 25000, c: 480}
+  - {a: ground, b: 4, k: 55000, c: 700}
+  - {a: 4, b: 5, k: 30000, c: 350}
+  - {a: ground, b: 5, k: 45000, c: 460}
+  - {a: 5, b: 6, k: 40000, c: 480}
+  - {a: 3, b: 4, k: 40000, c: 0, name: "34"}
+subsystems: [[1, 2], [3, 4], [5, 6]]
+filters: ukf
+integrator: heun
+schedule: {type: jacobi, iterations: 1}
+unknowns:
+  k3:  {initial: 31500, std: 1.0e4}
+  c3:  {initial: 224,   std: 316}
+  m3:  {initial: 570,   std: 100}
+  k6:  {initial: 38500, std: 1.0e4}
+  c6:  {initial: 490,   std: 31.6}
+  k34: {initial: 28000, std: 1.0e4}
+  k9:  {initial: 28000, std: 1.0e4}
+  c9:  {initial: 336,   std: 316}
+sensors: [a2, a3, a4, a5]
+noise_std: {a2: 3.0e-2, a3: 1.0e-1, a4: 1.0e-1, a5: 3.0e-2}
+loads:
+  4: {type: elcentro, path: data/elcentro.mat, scale: 1500}
+time: {dt: 2.0e-3, T: 50.0}
+truth: {seed: 1, noise_std: 1.0e-3}            # data noise 1e-3; noise_std above is the inflated R of the script
+prior: {state_var: 1.0e-4, process_var: 1.0e-11, r_inflation: 1}

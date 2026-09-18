@@ -1,0 +1,18 @@
+# YAML twin of 03_forward_jacobi_vs_gauss_seidel.py: direct (forward) problem, no filters.
+# The script loads this file and overrides `schedule` to compare jacobi / gauss_seidel / ab2.
+model: mass_spring_chain
+mode: simulate                               # forward problem: no measurements, no unknowns
+masses: [500, 500, 500, 500]
+stiffness: [50000, 50000, 50000, 50000]
+damping: [300, 300, 300, 300]
+subsystems: [[1, 2], [3, 4]]
+integrator: heun
+schedule: jacobi                             # jacobi | gauss_seidel | ab2
+loads:
+  1: {type: random, std: 50, seed: 124}
+  2: {type: random, std: 50, seed: 125}
+  3: {type: random, std: 50, seed: 126}
+  4: {type: random, std: 50, seed: 127}
+time: {dt: 1.0e-3, T: 5.0}
+initial_state: {x1: 0.01, v1: 0.01}          # used by both the decomposed and the monolithic (truth) model
+truth: {integrator: heun}

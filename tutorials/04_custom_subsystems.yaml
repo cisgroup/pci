@@ -1,0 +1,48 @@
+# YAML twin of 04_custom_subsystems.py: user-written equations (needs sympy).
+# Subsystem A: Duffing oscillator with unknown linear stiffness k (EKF).
+# Subsystem B: linear oscillator, states only (UKF). Coupled by a spring-damper, Gauss-Seidel messages.
+model: custom
+subsystems:
+  A:
+    states: [q, v]
+    inputs: [f]                              # total force on the mass (external load + interface message)
+    parameters: {m: 1.0, k3: 50.0, c: 0.3}
+    unknowns: {k: {initial: 5.0, std: 5.0}}
+    equations:                               # d/dt of each state
+      q: v
+      v: (f - k*q - k3*q**3 - c*v) / m
+    measurements:
+      a_A: (f - k*q - k3*q**3 - c*v) / m     # accelerometer on A
+    noise_std: {a_A: 1.0e-2}
+    filter: ekf
+    integrator: heun
+    x0: {q: 0.3}
+    P0: 1.0e-4
+    Q: 1.0e-10
+  B:
+    states: [q, v]
+    inputs: [f]
+    parameters: {m: 2.0, k: 20.0, c: 0.4}
+    equations:
+      q: v
+      v: (f - k*q - c*v) / m
+    measurements:
+      q_B: q                                 # displacement sensor on B
+    noise_std: {q_B: 1.0e-3}
+    filter: ukf
+    P0: 1.0e-4
+    Q: 1.0e-10
+interfaces:
+  - {type: spring_damper, a: A, a_vars: [q, v], a_port: f, b: B, b_vars: [q, v], b_port: f, k: 6.0, c: 0.2, name: F_AB}
+  # equivalent explicit form (one direction shown):
+  # - {type: custom, sender: B, receiver: A, sender_vars: [q, v], receiver_vars: [q, v], target: f,
+  #    law: "k*(r_q - s_q) + c*(r_v - s_v)", constants: {k: 6.0, c: 0.2}, sign: -1, name: F_AB}
+schedule: gauss_seidel
+loads: {A.f: {type: harmonic, amplitude: 2.0, frequency: 0.7}}
+time: {dt: 1.0e-3, T: 20.0}
+truth:
+  parameters: {A.k: 12.0}                    # true stiffness; the filter starts from 5.0
+  x0: {A.q: 0.3}
+  schedule: ab2                              # coupled forward simulation used as ground truth
+  seed: 0
+prior: {r_inflation: 1}
