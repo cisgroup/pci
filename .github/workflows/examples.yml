@@ -1,0 +1,35 @@
+name: Examples (full horizon)
+
+# Weekly execution of every tutorial and case study at the paper-length horizons
+# (20 s at 1 ms for the case studies; PCI_T unset). ci.yml runs the same notebooks on
+# every pull request with a short horizon; this is the slow canary that catches drift
+# in the estimates themselves. Also runnable on demand before a release.
+
+on:
+  schedule:
+    - cron: "23 4 * * 1" # Mondays 04:23 UTC
+  workflow_dispatch:
+
+concurrency:
+  group: examples-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  notebooks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install
+        run: python -m pip install -e ".[dev]"
+
+      - name: Execute all notebooks at full length
+        env:
+          MPLBACKEND: Agg
+        run: pytest --nbmake --nbmake-timeout=3600 examples/*.ipynb case_studies/*.ipynb
