@@ -1,0 +1,62 @@
+/* pci brand palette. mkdocs.yml sets primary: custom / accent: custom; the colors live
+   here so light and dark can be tuned independently. Deep indigo primary (the graph of
+   subsystems), warm amber accent (the messages travelling along its edges). */
+:root {
+  --md-primary-fg-color:        #303f9f;
+  --md-primary-fg-color--light: #7986cb;
+  --md-primary-fg-color--dark:  #1a237e;
+  --md-accent-fg-color:         #ef6c00;
+  --md-accent-fg-color--transparent: rgba(239, 108, 0, 0.1);
+}
+
+/* Dark (slate): a medium indigo header and brighter links. */
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color:        #3949ab;
+  --md-primary-fg-color--light: #9fa8da;
+  --md-primary-fg-color--dark:  #1a237e;
+  --md-accent-fg-color:         #ffb74d;
+  --md-typeset-a-color:         #9fa8da;
+}
+
+/* Rounded corners on figures and gallery thumbnails. */
+.md-typeset img[src*="/images/"],
+.md-typeset figure img {
+  border-radius: 0.4rem;
+}
+
+.md-typeset img.center {
+  display: block;
+  margin-inline: auto;
+}
+
+/* Gallery cards: uniform thumbnail aspect (cropped in-browser with object-fit). */
+.md-typeset .grid.cards img {
+  width: 100%;
+  aspect-ratio: 5 / 3;
+  object-fit: cover;
+  border-radius: 0.4rem;
+}
+.md-typeset .grid.cards img.no-crop {
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+
+/* Landing hero. */
+.md-typeset .pci-hero {
+  text-align: center;
+}
+.md-typeset .pci-hero img {
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  max-width: 100%;
+}
+
+.md-typeset .grid.cards .twemoji.lg svg {
+  height: 1.8rem;
+  width: 1.8rem;
+}
+
+/* Notebook pages: let wide printed tables scroll instead of overflowing. */
+.jupyter-wrapper .jp-OutputArea-output pre {
+  overflow-x: auto;
+}
