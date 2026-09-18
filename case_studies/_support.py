@@ -1,4 +1,7 @@
-"""Shared helpers for the case-study scripts 07-10 (chain definition, report, figures)."""
+"""Shared helpers for the case studies (chain definition, design table, report, YAML check).
+
+Not a tutorial: imported by ``01_case_09dof.py`` ... ``04_case_40dof.py``.
+"""
 
 from __future__ import annotations
 
@@ -9,7 +12,8 @@ import numpy as np
 import pci
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.join(HERE, "results")
+# The 1940 El Centro record shipped with the tutorials (from the paper repository).
+ELCENTRO = os.path.join(HERE, "..", "examples", "data", "elcentro.mat")
 
 
 def chain_properties(n_dof: int):
@@ -19,6 +23,33 @@ def chain_properties(n_dof: int):
     k = np.round(50_000.0 * (1.0 + 0.25 * np.sin(1.3 * i)), 1)
     c = np.round(300.0 * (1.0 + 0.30 * np.cos(0.9 * i)), 1)
     return masses.tolist(), k.tolist(), c.tolist()
+
+
+def build(n_dof, partition, names, design, loads, dt, T, schedule, r_inflation):
+    """Physical chain, synthetic data and the decomposed system for one case study.
+
+    Returns ``(chain, truth_dict, data, system, unknowns, sensors, noise)``.
+    """
+    masses, k, c = chain_properties(n_dof)
+    chain = pci.MassSpringChain(masses, k=k, c=c)
+    truth = chain.simulate(loads, dt=dt, T=T)
+    truth_dict = {**truth.as_dict(), **chain.interface_forces(truth, partition)}
+
+    sensors, noise, filters, integrators, unknowns = [], {}, {}, {}, {}
+    for name, spec in zip(names, design):
+        filters[name] = spec["filter"]
+        integrators[name] = spec["integrator"]
+        for s, std in spec["sensors"].items():
+            sensors.append(s)
+            noise[s] = std
+        for p, frac in spec["unknowns"].items():
+            unknowns[p] = {"initial": round(frac * chain.parameters[p], 1), "std": round(0.5 * chain.parameters[p], 1)}
+    data = chain.measure(truth, sensors, noise_std=noise, seed=1)
+
+    system = chain.decompose(partition, unknowns=unknowns, sensors=sensors, noise_std=noise, filters=filters,
+                             integrator=integrators, schedule=schedule, state_var=1e-4, process_var=1e-10,
+                             names=names, r_inflation=r_inflation)
+    return chain, truth_dict, data, system, unknowns, sensors, noise
 
 
 def print_design(title, names, partition, design, dt, T, schedule, r_inflation):
@@ -33,7 +64,7 @@ def print_design(title, names, partition, design, dt, T, schedule, r_inflation):
 
 
 def report(res, true_params, unknowns, names, partition, T):
-    print(f"\nDistributed run time: {res.runtime:.1f} s (sequential; ~{res.runtime / len(partition):.1f} s with one core per subsystem)")
+    print(f"Distributed run time: {res.runtime:.1f} s (sequential; ~{res.runtime / len(partition):.1f} s with one core per subsystem)")
     print(f"\n{'parameter':<10s}{'true':>10s}{'initial':>10s}{'final':>12s}{'error %':>9s}{'post. std':>11s}")
     for p, spec in unknowns.items():
         true, fin, sd = true_params[p], res.final(p), res.std(p)[-1]
@@ -47,27 +78,24 @@ def report(res, true_params, unknowns, names, partition, T):
     print("interface-force NRMSE (2nd half): " + ", ".join(f"{k} {v:.2%}" for k, v in msg.items()))
 
 
-def save_figures(res, tag, partition, unknowns):
-    os.makedirs(OUT, exist_ok=True)
-    import matplotlib
-    matplotlib.use("Agg")
-    if unknowns:
-        res.plot_parameters().savefig(os.path.join(OUT, f"{tag}_parameters.png"), dpi=130)
-    show = [f"S{i + 1}.x{g[len(g) // 2]}" for i, g in enumerate(partition)][:6]
-    res.plot_states(show).savefig(os.path.join(OUT, f"{tag}_states.png"), dpi=130)
-    res.plot_messages().savefig(os.path.join(OUT, f"{tag}_messages.png"), dpi=130)
-    try:
-        res.to_dataframe().to_csv(os.path.join(OUT, f"{tag}_trajectories.csv"), index=False)
-    except ImportError:
-        pass
-    print(f"figures saved to {OUT}/{tag}_*.png")
+def centralized(chain, n_dof, unknowns, sensors, noise, data, loads, dt, T, truth_dict, r_inflation, res):
+    """Run a single UKF on the full augmented state and print it next to the distributed result."""
+    mono = chain.decompose([list(range(1, n_dof + 1))], unknowns=unknowns, sensors=sensors, noise_std=noise,
+                           filters="ukf", state_var=1e-4, process_var=1e-10, names=["central"], r_inflation=r_inflation)
+    cres = mono.estimate(data, loads={f"f{d}": v for d, v in loads.items()}, dt=dt, T=T, truth=truth_dict)
+    print(f"Centralized UKF ({2 * n_dof + len(unknowns)} augmented states): {cres.runtime:.1f} s")
+    for p in unknowns:
+        tp = chain.parameters[p]
+        print(f"  {p:<6s} central {cres.final(p):>10.1f} ({100 * (cres.final(p) - tp) / tp:+.2f}%)"
+              f"   distributed {res.final(p):>10.1f} ({100 * (res.final(p) - tp) / tp:+.2f}%)")
+    return cres
 
 
 def compare_with_yaml(res, yaml_path, unknowns):
     """Solve the YAML twin and check that it reproduces the Python-API result."""
     yres = pci.solve(yaml_path)
     worst = max(abs(yres.final(p) - res.final(p)) / max(abs(res.final(p)), 1e-12) for p in unknowns) if unknowns else 0.0
-    print(f"\nYAML twin ({os.path.basename(yaml_path)}): "
+    print(f"YAML twin ({os.path.basename(yaml_path)}): "
           + ", ".join(f"{p}={yres.final(p):.1f}" for p in unknowns)
           + f"   max relative difference to Python API: {worst:.2e}")
     return yres

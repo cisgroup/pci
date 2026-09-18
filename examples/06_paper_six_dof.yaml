@@ -29,7 +29,7 @@ unknowns:
 sensors: [a2, a3, a4, a5]
 noise_std: {a2: 3.0e-2, a3: 1.0e-1, a4: 1.0e-1, a5: 3.0e-2}
 loads:
-  4: {type: elcentro, path: ~/Documents/Princeton/Projects/Active-projects/ntwks/parl_KFs/Selected_code_for_sub/github-compositional-inference/data/elcentro.mat, scale: 1500}
+  4: {type: elcentro, path: data/elcentro.mat, scale: 1500}
 time: {dt: 2.0e-3, T: 50.0}
 truth: {seed: 1, noise_std: 1.0e-3}            # data noise 1e-3; noise_std above is the inflated R of the script
 prior: {state_var: 1.0e-4, process_var: 1.0e-11, r_inflation: 1}

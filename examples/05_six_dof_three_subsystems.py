@@ -1,15 +1,39 @@
-"""6-DOF chain with three subsystems and heterogeneous filters.
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     formats: ipynb,py:percent
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.5
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+# ---
 
-Springs to ground at several masses, one parallel spring between DOFs 3 and 4,
-several unknown internal parameters, and three different local estimators.
-Loosely follows the 6-DOF example of the paper.
-"""
+# %% [markdown]
+# # 5. Six DOF, three subsystems, three filters
+#
+# A 6-DOF chain with springs to ground at several masses and a parallel spring
+# between DOFs 3 and 4, split into three 2-DOF subsystems. Seven internal parameters
+# are unknown and each subsystem runs a different local estimator (UKF, CKF, EKF).
+# Loosely follows the 6-DOF example of the paper.
 
-import matplotlib.pyplot as plt
-
+# %%
 import pci
 from pci import Spring
 
+# %% [markdown]
+# ## An explicit spring topology
+#
+# Beyond the serial `uniform` chain, `MassSpringChain` takes any list of `Spring`
+# objects: grounded or between two DOFs, with a stiffness, a damping and an optional
+# name. Parameter names follow the spring index (`k3`, `c3`) or the given name (`k34`).
+
+# %%
 springs = [
     Spring("ground", 1, 50_000.0, 300.0),          # k1
     Spring("ground", 2, 40_000.0, 350.0),          # k2
@@ -30,6 +54,15 @@ truth = chain.simulate(loads, dt=dt, T=T)
 sensors = ["a2", "a3", "a4", "a5"]
 data = chain.measure(truth, sensors, noise_std=1e-3, seed=1)
 
+# %% [markdown]
+# ## Decompose with heterogeneous estimators
+#
+# Unknowns must be internal to a subsystem: a mass, or a spring whose two ends lie in
+# the same subsystem or on the ground. Interface springs (`k4`, `k7`) stay known;
+# learning them is a roadmap item. Here the measurement noise given to the filters is
+# already the inflated value of the paper script, so `r_inflation=1`.
+
+# %%
 partition = [[1, 2], [3, 4], [5, 6]]
 guess = 0.7
 system = chain.decompose(
@@ -49,17 +82,27 @@ system = chain.decompose(
     integrator="heun",
     schedule="jacobi",
     process_var=1e-11,
-    r_inflation=1.0,  # R_std above is already the inflated value used in the paper script
+    r_inflation=1.0,
 )
 print(system.describe())
-results = system.estimate(data, loads={"f4": loads[4]}, dt=dt, T=T,
-                          truth={**truth.as_dict(), **chain.interface_forces(truth, partition)}, progress=True)
-print(results.summary(start=10.0))
-results.plot_parameters()
-results.plot_messages()
-plt.show()
 
-# ---- the same problem from its YAML twin ----------------------------------------------------
-import os
-yaml_results = pci.solve(os.path.join(os.path.dirname(os.path.abspath(__file__)), "05_six_dof_three_subsystems.yaml"))
-print("\nYAML twin:", {p: round(yaml_results.final(p), 1) for p in ["k3", "c3", "k6", "c6", "k34", "k9", "c9"]})
+# %%
+results = system.estimate(data, loads={"f4": loads[4]}, dt=dt, T=T,
+                          truth={**truth.as_dict(), **chain.interface_forces(truth, partition)})
+print(results.summary(start=10.0))
+
+# %%
+results.plot_parameters();
+
+# %%
+results.plot_messages();
+
+# %% [markdown]
+# Stiffnesses converge within a few seconds; dampings identified from accelerations
+# alone converge more slowly, as in the paper's 6-DOF study.
+#
+# ## The YAML twin
+
+# %%
+yaml_results = pci.solve("05_six_dof_three_subsystems.yaml")
+print("YAML twin:", {p: round(yaml_results.final(p), 1) for p in ["k3", "c3", "k6", "c6", "k34", "k9", "c9"]})

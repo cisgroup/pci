@@ -1,84 +1,100 @@
-"""Case study: 9 DOF = 3 x 3-DOF.
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     formats: ipynb,py:percent
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.19.5
+#   kernelspec:
+#     display_name: Python 3 (ipykernel)
+#     language: python
+#     name: python3
+# ---
 
-Serial mass-spring chain with non-uniform properties, split into 3 subsystems.
-Every subsystem has its own sensors, noise level, task (state estimation only or
-joint state-and-parameter estimation), filter and integrator; messages are mean
-interface forces exchanged with the jacobi schedule.
+# %% [markdown]
+# # Case study 1: 9 DOF = 3 x 3-DOF
+#
+# Three 3-DOF subsystems with three different filters and tasks: the grounded subsystem only tracks its states with a linear KF, the free-floating middle one identifies a stiffness from two accelerometers with a UKF, and the last one identifies a stiffness and a damping from a displacement and an acceleration sensor with a CKF and RK4.
+#
+# The chain has non-uniform masses, stiffnesses and dampings, random forces act on
+# every mass, and messages are mean interface forces exchanged with the
+# **jacobi** schedule. The measurement covariance is inflated
+# 10x to account for the message error (see [Concepts](../concepts.md)).
+#
+# The paper-length horizon is 20 s at 1 ms; set `PCI_T` to shorten it. Set
+# `RUN_CENTRAL = True` to also run a single UKF on the full augmented state for
+# comparison.
 
-Two equivalent routes are shown: the Python API and the YAML twin 07_case_09dof.yaml.
-Usage: python 07_case_09dof.py [--central] [--no-save]      (CI_T overrides the 20 s horizon)
-"""
-
-import argparse
+# %%
 import os
 
-import numpy as np
+from _support import build, centralized, compare_with_yaml, print_design, report
 
-import pci
-from casestudy_report import chain_properties, compare_with_yaml, print_design, report, save_figures
-
-HERE = os.path.dirname(os.path.abspath(__file__))
 N_DOF = 9
 PARTITION = [[1, 2, 3], [4, 5, 6], [7, 8, 9]]
 NAMES = ['S1', 'S2', 'S3']
 SCHEDULE = "jacobi"
-DT, T = 1e-3, float(os.environ.get("CI_T", 20.0))
-R_INFLATION = 10.0     # R = (10 x sensor noise)^2, needed with mean-only messages (see README)
+DT, T = 1e-3, float(os.environ.get("PCI_T", 20.0))
+R_INFLATION = 10.0     # R = (10 x sensor noise)^2, needed with mean-only messages
+RUN_CENTRAL = False
 
-# one entry per subsystem: filter, integrator, sensors {name: noise std}, unknowns {param: initial guess / true}
+# %% [markdown]
+# ## Design: one line per subsystem
+#
+# Filter, integrator, sensors with their noise standard deviation, and the unknowns as
+# a fraction of the true value used for the initial guess.
+
+# %%
 DESIGN = [
-    dict(filter='kf', integrator='heun', sensors={'a1': 0.005, 'a3': 0.005}, unknowns={}),  # grounded: accelerations only, states only (linear KF),
-    dict(filter='ukf', integrator='heun', sensors={'a5': 0.01, 'a6': 0.01}, unknowns={'k5': 0.6}),  # free-floating, two accelerometers, joint estimation,
-    dict(filter='ckf', integrator='rk4', sensors={'x8': 0.001, 'a9': 0.005}, unknowns={'k9': 0.7, 'c9': 1.5}),  # displacement + acceleration, two unknowns, RK4,
+    dict(filter='kf', integrator='heun', sensors={'a1': 0.005, 'a3': 0.005}, unknowns={}),  # grounded: accelerations only, states only (linear KF)
+    dict(filter='ukf', integrator='heun', sensors={'a5': 0.01, 'a6': 0.01}, unknowns={'k5': 0.6}),  # free-floating, two accelerometers, joint estimation
+    dict(filter='ckf', integrator='rk4', sensors={'x8': 0.001, 'a9': 0.005}, unknowns={'k9': 0.7, 'c9': 1.5}),  # displacement + acceleration, two unknowns, RK4
 ]
 LOADS = {1: {"type": "harmonic", "amplitude": 300.0, "frequency": 1.2}}
 LOADS.update({d: {"type": "random", "std": 400.0, "seed": 10 + d} for d in range(1, N_DOF + 1)})
 
-# ---- physical system and synthetic data --------------------------------------------------------
-masses, k, c = chain_properties(N_DOF)
-chain = pci.MassSpringChain(masses, k=k, c=c)
-truth = chain.simulate(LOADS, dt=DT, T=T)
-truth_dict = {**truth.as_dict(), **chain.interface_forces(truth, PARTITION)}
+# %% [markdown]
+# ## Physical system, synthetic data, decomposition
 
-sensors, noise, filters, integrators, unknowns = [], {}, {}, {}, {}
-for name, spec in zip(NAMES, DESIGN):
-    filters[name] = spec["filter"]
-    integrators[name] = spec["integrator"]
-    for s, std in spec["sensors"].items():
-        sensors.append(s)
-        noise[s] = std
-    for p, frac in spec["unknowns"].items():
-        unknowns[p] = {"initial": round(frac * chain.parameters[p], 1), "std": round(0.5 * chain.parameters[p], 1)}
-data = chain.measure(truth, sensors, noise_std=noise, seed=1)
+# %%
+chain, truth_dict, data, system, unknowns, sensors, noise = build(N_DOF, PARTITION, NAMES, DESIGN, LOADS, DT, T, SCHEDULE, R_INFLATION)
+print_design("9 DOF = 3 x 3-DOF", NAMES, PARTITION, DESIGN, DT, T, SCHEDULE, R_INFLATION)
 
-# ---- decomposition, local estimators, message passing ------------------------------------------
-system = chain.decompose(PARTITION, unknowns=unknowns, sensors=sensors, noise_std=noise, filters=filters,
-                         integrator=integrators, schedule=SCHEDULE, state_var=1e-4, process_var=1e-10,
-                         names=NAMES, r_inflation=R_INFLATION)
+# %% [markdown]
+# ## Distributed estimation
 
-if __name__ == "__main__":
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--central", action="store_true", help="also run a centralized UKF on the full augmented state")
-    ap.add_argument("--no-save", action="store_true")
-    args = ap.parse_args()
+# %%
+res = system.estimate(data, loads={f"f{d}": v for d, v in LOADS.items()}, dt=DT, T=T, truth=truth_dict)
+report(res, chain.parameters, unknowns, NAMES, PARTITION, T)
 
-    print_design("9 DOF = 3 x 3-DOF", NAMES, PARTITION, DESIGN, DT, T, SCHEDULE, R_INFLATION)
-    res = system.estimate(data, loads={f"f{d}": v for d, v in LOADS.items()}, dt=DT, T=T, truth=truth_dict, progress=True)
-    report(res, chain.parameters, unknowns, NAMES, PARTITION, T)
+# %%
+res.plot_parameters();
 
-    if args.central:
-        mono = chain.decompose([list(range(1, N_DOF + 1))], unknowns=unknowns, sensors=sensors, noise_std=noise,
-                               filters="ukf", state_var=1e-4, process_var=1e-10, names=["central"], r_inflation=R_INFLATION)
-        cres = mono.estimate(data, loads={f"f{d}": v for d, v in LOADS.items()}, dt=DT, T=T, truth=truth_dict, progress=True)
-        print(f"\nCentralized UKF ({2 * N_DOF + len(unknowns)} augmented states): {cres.runtime:.1f} s")
-        for p in unknowns:
-            tp = chain.parameters[p]
-            print(f"  {p:<6s} central {cres.final(p):>10.1f} ({100 * (cres.final(p) - tp) / tp:+.2f}%)"
-                  f"   distributed {res.final(p):>10.1f} ({100 * (res.final(p) - tp) / tp:+.2f}%)")
+# %%
+res.plot_states([f"{name}.x{g[len(g) // 2]}" for name, g in zip(NAMES, PARTITION)][:6]);
 
-    if not args.no_save:
-        save_figures(res, "case09_" + SCHEDULE, PARTITION, unknowns)
+# %%
+res.plot_messages();
 
-    # ---- YAML twin: identical problem, no Python beyond pci.solve ---------------------------------
-    if T == 20.0:
-        compare_with_yaml(res, os.path.join(HERE, "07_case_09dof.yaml"), unknowns)
+# %% [markdown]
+# ## Centralized comparison (optional)
+
+# %%
+if RUN_CENTRAL:
+    centralized(chain, N_DOF, unknowns, sensors, noise, data, LOADS, DT, T, truth_dict, R_INFLATION, res)
+
+# %% [markdown]
+# ## The YAML twin
+#
+# `01_case_09dof.yaml` describes the identical problem; with the full 20 s horizon it
+# reproduces the Python-API result to machine precision.
+
+# %%
+if T == 20.0:
+    compare_with_yaml(res, "01_case_09dof.yaml", unknowns)
+
+# %% [markdown]
+# The three schedules give the same parameters on this case; Jacobi and AB2 give the smallest state errors. The centralized UKF on the full augmented state agrees with the distributed estimates (k5 about -0.4 % in both) at 2-3x the sequential cost and without the one-core-per-subsystem speed-up.

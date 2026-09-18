@@ -1,6 +1,6 @@
 # Two non-standard subsystems written as equation strings (model: custom): a Van der Pol oscillator with
 # unknown mu (UKF, RK4) coupled by a spring-damper to a Bouc-Wen hysteretic element with unknown beta, gamma (CKF).
-# Solve with:  pci.solve("11_vanderpol_boucwen.yaml")
+# Solve with:  pci.solve("07_vanderpol_boucwen.yaml")
 model: custom
 subsystems:
   VdP:
